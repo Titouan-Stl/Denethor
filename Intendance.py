@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
-#Programme par Titouan STOLTZ - EEDF Meudon
+#Programme par Titouan - Responsable EEDF Meudon
 ##Imports & vars
 from tkinter import *
 from tkinter import ttk
-from ttkwidgets.autocomplete import AutocompleteEntryListbox
+from ttkwidgets.autocomplete import AutocompleteEntryListbox #besoin de pip install
+# from HoverInfo import HoverInfo #Fichier local
 import sqlite3
 import os
 import sys
 import inspect
 
 APP_NAME = "Denethor"
-dbName = "Intendance.db"
+APP_VERSION = "beta 0.2"
+dbName = "DenethorDB.db"
 regimeList = ["Viande","Sans-porc","Végétarien","Végétalien"]
 allergeneList = ["Gluten", "Arachides", "Crustacé", "Œuf", "Poisson", "Soja", "Lait", "Fruits à coque", "Céleri", "Moutarde", "Graines de sésame", "Anhydrides sulfureux/sulfites", "Lupin", "Mollusques"]
 regimeNot = "Ignorer"
@@ -60,6 +62,12 @@ def formatBDD():
     setSQL("CREATE TABLE IF NOT EXISTS listes (id_list INTEGER PRIMARY KEY, is_ing INTEGER, id INTEGER, qte_enfant INTEGER, qte_adulte INTEGER, '0' INTEGER, '1' INTEGER, '2' INTEGER, '3' INTEGER)")
 
 ##Fonctions diverses
+def get_path(filename):     #Utilisé pour .exe avec pyinstaller
+    if hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, filename)
+    else:
+        return filename
+
 def center(win):
     """
     centers a tkinter window
@@ -1621,7 +1629,7 @@ def exportListeCoursesConfirm(file_name, ingsInShopListList, exportShopListNameE
                             allergenesStr += allergeneList[packet] + ", "
             allergenesStr = allergenesStr.strip(",\n").capitalize()
             # print(allergenesStr)
-            line = ingStr + " " + unitStr + " " + allergenesStr + "\n"
+            line = ingStr + " " + unitStr + " " + allergenesStr.strip(", ") + "\n"
         else:
             line = ingStr + " " + unitStr.strip(" ") + "\n"
 
@@ -2420,6 +2428,54 @@ def makelistecoursesFrame():
 def raiselistecourses():
     listeFrame.tkraise()
 
+##Autres fonctions tkinter
+def showAppInfos():
+    showAppInfosWin= Toplevel(root)
+    showAppInfosWin.geometry("620x350")
+    center(showAppInfosWin)
+    showAppInfosWin.grab_set()        #Pour ne pas pouvoir accéder à la main window pendant la saisie
+
+    showAppInfosWin.grid_columnconfigure(0, weight=1)
+    showAppInfosWin.grid_rowconfigure(2, weight=1)
+
+    showAppInfosWin.title("Informations de l'application")
+    label = Label(showAppInfosWin, text="Application %s version %s" % (APP_NAME, APP_VERSION), font = "Verdana 12 bold", bd=8, relief=RAISED)
+    label.grid(row=0, column=0, columnspan = 2, sticky='nwe')
+
+    infosApp = "UTILISATION : " + "\n"
+    infosApp += "Le but de cette application est d'aider les intendants à composer leurs listes de courses." + "\n"
+    infosApp += "Vous pouvez ajouter des ingrédients, puis les utiliser pour composer des plats." + "\n"
+    infosApp += "Ensuite, entrez la liste des personnes présentes et choisissez quels éléments vous voulez dans votre liste de courses." + "\n"
+    infosApp += "Le programme calculera les quantités nécessaire en fonction des quantités par personne que vous avez entrées." + "\n"
+    infosApp += "Vous pouvez ensuite exporter la liste de courses sous format .txt" + "\n\n"
+    infosApp += "Vous pouvez notifier de la présence d'allergènes dans les ingrédients," + "\n"
+    infosApp += "qui seront ensuite reportés dans les plats utilisant ces ingrédients, puis dans la liste de courses" + "\n"
+    infosApp += "ATTENTION : les allergènes sont là purement à titre indicatif, " + APP_NAME + " ne fera aucun calcul avec !" + "\n"
+    infosApp += "Si vous avez des personnes allergiques dans votre groupe, n'utilisez pas " + APP_NAME + " pour faire leurs menus !" + "\n\n\n"
+    infosApp += "DÉVELOPPEMENT : " + "\n"
+    infosApp += "Application développée par Titouan, responsable EEDF au groupe de Meudon" + "\n"
+    infosApp += "Téléchargement : github.com/Titouan-Stl/Denethor" + "\n"
+    infosApp += "Code fait en Python, et probablement très moche. Le code source est disponible sur Github" + "\n"
+    infosApp += "Contact : titouanthetitan sur Discord (oui je sais c'est pas terrible)"
+
+    infosLbl = Label(showAppInfosWin, text=infosApp, bg="yellow", justify = "left")
+    infosLbl.grid(row=1, column=0, sticky='news')
+
+    closeButton = Button(showAppInfosWin,
+        text="    Fermer    ",
+        font = "Verdana 10 bold",
+        bd = 2,
+        relief = "groove",
+        command= showAppInfosWin.destroy
+        )
+    closeButton.grid(row=2, column=0, sticky='ns')
+
+    showAppInfosWin.bind('<Return>', lambda event:showAppInfosWin.destroy())
+    showAppInfosWin.bind('<Escape>', lambda event:showAppInfosWin.destroy())
+
+    showAppInfosWin.after(1, lambda: showAppInfosWin.focus_force())
+    showAppInfosWin.mainloop()
+    return None
 
 
 ##Ouverture/création de la BDD
@@ -2445,8 +2501,8 @@ container.grid_columnconfigure(0, weight = 1)
 
 
 root.title(APP_NAME + ", l'aide de camp de l'intendant")
-# icon = PhotoImage(file = 'icon.png')
-# root.iconphoto(False, icon)
+icon = PhotoImage(file = get_path("icon.png"))
+root.iconphoto(False, icon)
 
 # makeingFrame()
 # makeplatFrame()
@@ -2458,7 +2514,11 @@ mainmenu.add_command(label = "Gérer les ingrédients", command= makeingFrame)
 mainmenu.add_command(label = "Gérer les plats", command= makeplatFrame)
 # mainmenu.add_command(label = "Gérer les personnes", command= raisepers)
 mainmenu.add_command(label = "Générer une liste de courses", command= makelistecoursesFrame)
+mainmenu.add_command(label = "À propos", command= showAppInfos)
 mainmenu.add_command(label = "Quitter", command= root.destroy)
+
+# root.hover = HoverInfo(root, 'while hovering press return \n for an exciting msg')
+
 
 root.config(menu = mainmenu)
 
